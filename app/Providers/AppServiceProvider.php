@@ -2,10 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use App\Validators\UsernameValidator;
 use App\Validators\KeepWordValidator;
 use App\Validators\TicketValidator;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         // 注册自定义的验证扩展
-        $this->regisgerValidators();
+        $this->registerValidators();
     }
 
     /**

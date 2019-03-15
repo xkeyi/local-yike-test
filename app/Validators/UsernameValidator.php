@@ -5,7 +5,7 @@ namespace App\Validators;
 /**
  * Class UsernameValidator.
  */
-class UsernameValidators
+class UsernameValidator
 {
     public function validate($attribute, $value, $parameters, $validator)
     {
