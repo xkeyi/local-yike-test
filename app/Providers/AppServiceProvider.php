@@ -2,9 +2,10 @@
 
 namespace App\Providers;
 
-use App\Validators\UsernameValidator;
+use App\Validators\HashValidator;
 use App\Validators\KeepWordValidator;
 use App\Validators\TicketValidator;
+use App\Validators\UsernameValidator;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,9 +13,10 @@ class AppServiceProvider extends ServiceProvider
 {
     // 自定义验证规则扩展
     protected $validators =[
-        'username' => UsernameValidator::class,
+        'hash' => HashValidator::class,
         'key_word' => KeepWordValidator::class,
         'ticket' => TicketValidator::class,
+        'username' => UsernameValidator::class,
     ];
 
     /**

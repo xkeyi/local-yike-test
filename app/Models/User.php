@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Mail\Activation;
+use App\Mail\MailConfirmation;
+use App\Mail\ResetPassword;
 use Laravel\Passport\HasApiTokens;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -24,6 +26,10 @@ class User extends Authenticatable
         'name', 'username', 'energy', 'email', 'password', 'activated_at', 'avatar', 'realname', 'phone',
         'bio', 'extends', 'settings', 'level', 'is_admin', 'cache', 'gender',
         'last_active_at', 'banned_at', 'activated_at',
+    ];
+
+    const SENSITIVE_FIELDS = [
+        'last_active_at', 'banned_at', 'email', 'realname', 'phone', 'settings',
     ];
 
     protected $hidden = [
@@ -105,5 +111,25 @@ class User extends Authenticatable
     public function findForPassport($identifier)
     {
         return self::orWhere('email', $identifier)->orWhere('username', $identifier)->first();
+    }
+
+    public function sendPasswordResetNotification($token)
+    {
+        return Mail::to($this->email)->queue(new ResetPassword($this->email, $token));
+    }
+
+    public function sendUpdateMail($email)
+    {
+        return Mail::to($email)->queue(new MailConfirmation($this, $email));
+    }
+
+    public function getUpdateMailLink($email)
+    {
+        $params = [
+            'email' => $email,
+            'user_id' => $this->id,
+        ];
+
+        return UrlSigner::sign(route('user.update-email').'?'.http_build_query($params), 60);
     }
 }
