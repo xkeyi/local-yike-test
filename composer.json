@@ -16,6 +16,7 @@
         "laravel/tinker": "^1.0",
         "laravolt/avatar": "^2.2",
         "qcod/laravel-imageup": "^1.0",
+        "spatie/laravel-activitylog": "^3.2",
         "spatie/laravel-query-builder": "^1.17",
         "spatie/laravel-url-signer": "2.2.*"
     },
