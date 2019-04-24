@@ -26,6 +26,7 @@ Route::post('images', 'ImageController@store');
 Route::resources([
     'users' => 'UserController',
     'nodes' => 'NodeController',
+    'threads' => 'ThreadController',
 ]);
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {

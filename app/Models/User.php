@@ -9,6 +9,8 @@ use App\Traits\WithDiffForHumanTimes;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facedes\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\HasApiTokens;
@@ -29,10 +31,6 @@ class User extends Authenticatable
         'last_active_at', 'banned_at', 'activated_at',
     ];
 
-    const SENSITIVE_FIELDS = [
-        'last_active_at', 'banned_at', 'email', 'realname', 'phone', 'settings',
-    ];
-
     protected $hidden = [
         'password', 'remember_token', 'phone',
     ];
@@ -50,6 +48,53 @@ class User extends Authenticatable
         'settings' => 'json',
     ];
 
+    protected $appends = [
+        'has_banned', 'has_activated', 'created_at_timeago', 'updated_at_timeago',
+    ];
+
+    const SENSITIVE_FIELDS = [
+        'last_active_at', 'banned_at', 'email', 'realname', 'phone', 'settings',
+    ];
+
+    const UPDATE_SENSITIVE_FIELDS = [
+        'last_active_at', 'banned_at',
+    ];
+
+    const CACHE_FIELDS = [
+        'threads_count' => 0,
+        'comments_count' => 0,
+        'likes_count' => 0,
+        'followings_count' => 0,
+        'followers_count' => 0,
+        'subscriptions_count' => 0,
+    ];
+
+    const EXTENDS_FIELDS = [
+        'company' => '',
+        'location' => '',
+        'home_url' => '',
+        'github' => '',
+        'twitter' => '',
+        'facebook' => '',
+        'instagram' => '',
+        'telegram' => '',
+        'coding' => '',
+        'steam' => '',
+        'weibo' => '',
+    ];
+
+    const ENERGY_THREAD_CREATE = -20;
+
+    const ENERGY_COMMENT_CREATE = -2;
+
+    const ENERGY_THREAD_LIKED = 2;
+
+    const ENERGY_COMMENT_UP_VOTE = 2;
+
+    const ENERGY_COMMENT_DOWN_VOTE = -5;
+
+    const ENERGY_COMMENT_DELETE = -10;
+
     public static function boot()
     {
         parent::boot();
@@ -61,6 +106,53 @@ class User extends Authenticatable
                 \abort(400, '用户名已经存在');
             }
         });
+
+        static::saving(function ($user) {
+            if (Hash::needsRehash($user->password)) {
+                $user->password = \bcrypt($user->password);
+            }
+
+            if (\array_has($user->getDirty(), self::UPDATE_SENSITIVE_FIELDS) && !\request()->user()->is_admin) {
+                abort('非法请求！');
+            }
+
+            foreach ($user->getDirty() as $field => $value) {
+                if (\ends_with($field, '_at')) {
+                    $user->$field = $value ? now() : null;
+                }
+            }
+        });
+    }
+
+    public function threads()
+    {
+        return $this->hasMany(Thread::class);
+    }
+
+    public function scopeRecent($query)
+    {
+        return $query->latest();
+    }
+
+    // ???
+    public function scopePopular($query)
+    {
+        return $query->latest('');
+    }
+
+    public function scopeAdmin($query)
+    {
+        return $query->where('is_admin', true);
+    }
+
+    public function scopeValid()
+    {
+        return $this->whereNotNull('activated_at')->whereNull('banned_at');
+    }
+
+    public function scopeWithoutBanned()
+    {
+        return $this->whereNull('banned_at');
     }
 
     public static function isUsernameExists(string $username)
@@ -83,6 +175,16 @@ class User extends Authenticatable
         return $this->update(['activated_at' => now()]);
     }
 
+    public function getHasBannedAttribute()
+    {
+        return (bool) $this->banned_at;
+    }
+
+    public function getHasActivatedAttribute()
+    {
+        return (bool) $this->activated_at;
+    }
+
     public function getAvatarAttribute()
     {
         if (empty($this->attributes['avatar'])) {
@@ -100,6 +202,21 @@ class User extends Authenticatable
         }
 
         return $this->attributes['avatar'];
+    }
+
+    public function getCacheAttribute()
+    {
+        return \array_merge(self::CACHE_FIELDS, \json_decode($this->attributes['cache'] ?? '{}', true));
+    }
+
+    public function getIsValidAttribute()
+    {
+        return $this->has_activated && !$this->has_banned;
+    }
+
+    public function getExtendsAttribute()
+    {
+        return \array_merge(self::EXTENDS_FIELDS, \json_decode($this->attributes['extends'] ?? '{}', true));
     }
 
     /**
@@ -132,5 +249,10 @@ class User extends Authenticatable
         ];
 
         return UrlSigner::sign(route('user.update-email').'?'.http_build_query($params), 60);
+    }
+
+    public function canCreateThread()
+    {
+        return Cache::get('thread_sensitive_trigger_'.$this->id, 0) < Thread::THREAD_SENSITIVE_TRIGGER_LIMIT && $this->energy >= 0;
     }
 }

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\WithDiffForHumanTimes;
 use EloquentFilter\Filterable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Node extends Model
 {
-    use SoftDeletes, Filterable;
+    use SoftDeletes, Filterable, WithDiffForHumanTimes;
 
     protected $fillable = [
         'node_id', 'title', 'icon', 'banner', 'description', 'settings', 'cache',
@@ -30,6 +31,11 @@ class Node extends Model
     public function parent()
     {
         return $this->belongsTo(self::class);
+    }
+
+    public function threads()
+    {
+        return $this->hasMany(Thread::class);
     }
 
     public function scopeRoot($query)
