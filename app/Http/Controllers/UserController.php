@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ActivityResource;
+use App\Http\Resources\NotificationResource;
 use App\Http\Resources\UserResource;
+use App\Models\Notification;
 use App\Models\User;
 use App\Notifications\Welcome;
 use Illuminate\Http\Request;
@@ -14,8 +17,30 @@ class UserController extends Controller
     {
         $this->middleware('auth:api')
             ->except([
-                'activate', 'show', 'updateEmail',
+                'index', 'activate', 'show', 'updateEmail',
             ]);
+    }
+
+    public function index(Request $request)
+    {
+        $users = User::withoutBanned()
+                    ->filter($request->all())
+                    ->paginate($request->get('per_page', $request->get('limit', 20)));
+
+        return UserResource::collection($users);
+    }
+
+    public function exists(Request $request)
+    {
+        if ($request->has('email')) {
+            return ['success' => User::whereEmail($request->get('email'))->exists()];
+        }
+
+        if ($request->has('username')) {
+            return ['success' => User::isUsernameExists($request->get('username'))];
+        }
+
+        \abort(400);
     }
 
     /**
@@ -30,7 +55,7 @@ class UserController extends Controller
             $user->activate();
 
             // 发送激活通知
-            // $user->notify(new Welcome());
+            $user->notify(new Welcome());
 
             // 可修改为激活成功/失败后重定向的地址 return redirect($url)
             return response('邮件激活成功', 200);
@@ -51,6 +76,42 @@ class UserController extends Controller
     public function me(Request $request)
     {
         return new UserResource($request->user());
+    }
+
+    public function natifications(Request $request)
+    {
+        $notifications = Notification::whereNotifiableId(auth()->id())
+                            ->latest()
+                            ->filter($request->all())
+                            ->paginate($request->get('per_page', 20));
+
+        $request->user()->unreadNotifications->markAsRead();
+
+        return NotificationResource::collection($notifications);
+    }
+
+    public function followers(Request $request, User $user)
+    {
+        $users = $user->followers()->paginate($request->get('per_page', 20));
+
+        return UserResource::collection($users);
+    }
+
+    public function followings(Request $request, User $user)
+    {
+        $users = $user->followings()->paginate($request->get('per_page', 20));
+
+        return UserResource::collection($users);
+    }
+
+    // 最新动态
+    public function activities(Request $request, User $user)
+    {
+        $activities = $user->activities()->whereIn('log_name', [
+            'published.thread', 'commented.thread', 'follow.user', 'like.thread', 'subscribe.thread', 'subscribe.node'
+        ])->paginate($request->get('per_page', 20));
+
+        return ActivityResource::collection($activities);
     }
 
     public function show(User $user)

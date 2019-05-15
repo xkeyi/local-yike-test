@@ -6,19 +6,26 @@ use App\Mail\Activation;
 use App\Mail\MailConfirmation;
 use App\Mail\ResetPassword;
 use App\Traits\WithDiffForHumanTimes;
+use EloquentFilter\Filterable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facedes\Cache;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\HasApiTokens;
+use Overtrue\LaravelFollow\Traits\CanBeFollowed;
+use Overtrue\LaravelFollow\Traits\CanFavorite;
+use Overtrue\LaravelFollow\Traits\CanFollow;
+use Overtrue\LaravelFollow\Traits\CanLike;
+use Overtrue\LaravelFollow\Traits\CanSubscribe;
+use Overtrue\LaravelFollow\Traits\CanVote;
 use UrlSigner;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable, WithDiffForHumanTimes;
+    use HasApiTokens, Notifiable, Filterable, CanFavorite, CanLike, CanFollow, CanVote, CanSubscribe, CanBeFollowed, WithDiffForHumanTimes;
 
     /**
      * The attributes that are mass assignable.
@@ -124,9 +131,24 @@ class User extends Authenticatable
         });
     }
 
+    public function profiles()
+    {
+        return $this->hasMany(Profile::class);
+    }
+
     public function threads()
     {
         return $this->hasMany(Thread::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function activities()
+    {
+        return $this->hasMany(Activity::class, 'causer_id')->with('subject')->latest();
     }
 
     public function scopeRecent($query)

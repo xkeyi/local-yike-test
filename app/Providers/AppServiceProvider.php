@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Validators\HashValidator;
 use App\Validators\KeepWordValidator;
+use App\Validators\PolyExistsValidator;
 use App\Validators\TicketValidator;
 use App\Validators\UsernameValidator;
 use App\Validators\UserUniqueContentValidator;
@@ -16,6 +17,7 @@ class AppServiceProvider extends ServiceProvider
     protected $validators =[
         'hash' => HashValidator::class,
         'key_word' => KeepWordValidator::class,
+        'poly_exists' => PolyExistsValidator::class,
         'ticket' => TicketValidator::class,
         'username' => UsernameValidator::class,
         'user_unique_content' => UserUniqueContentValidator::class,

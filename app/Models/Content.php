@@ -54,4 +54,10 @@ class Content extends Model
     {
         return $this->belongsToMany(User::class, 'content_mention');
     }
+
+    public function getActivityLogContentAttribute()
+    {
+        // strip_tags - 从字符串中去除 HTML 和 PHP 标记
+        return \str_limit(\strip_tags($this->body), 200);
+    }
 }
