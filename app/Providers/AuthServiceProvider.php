@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Banner;
 use App\Models\Comment;
 use App\Models\Node;
 use App\Models\Thread;
 use App\Models\User;
+use App\Policies\BannerPolicy;
 use App\Policies\CommentPolicy;
 use App\Policies\NodePolicy;
 use App\Policies\ThreadPolicy;
@@ -27,6 +29,7 @@ class AuthServiceProvider extends ServiceProvider
         User::class => UserPolicy::class,
         Thread::class => ThreadPolicy::class,
         Comment::class => CommentPolicy::class,
+        Banner::class => BannerPolicy::class,
     ];
 
     /**

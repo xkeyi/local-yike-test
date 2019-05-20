@@ -41,6 +41,7 @@ Route::resources([
     'threads' => 'ThreadController',
     'comments' => 'CommentController',
     'notifications' => 'NotificationController',
+    'banners' => 'BannerController',
 ]);
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
