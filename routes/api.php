@@ -9,6 +9,12 @@ header('Access-Control-Allow-Methods: *');
 
 // Auth
 Route::post('auth/register', 'AuthController@register');
+Route::get('oauth/redirect-url/{platform}', 'OAuthController@getRedirectUrl');
+Route::get('oauth/callback/{platform}', 'OAuthController@handleCallback');
+Route::post('contents/preview', 'ContentController@preview');
+
+Route::get('relations', 'RelationController@index')->name('relations.index');
+Route::post('relations/{reletion}', 'RelationController@toggleRelation')->name('relations.toggle');
 
 // User
 Route::get('user/activate', 'UserController@activate')->name('user.activate');
@@ -24,6 +30,8 @@ Route::post('user/exists', 'UserController@exists');
 Route::get('user/{user}/followers', 'UserController@followers');
 Route::get('user/{user}/followings', 'UserController@followings');
 Route::get('user/{user}/activities', 'UserController@activities');
+
+Route::get('nodes/{node}/threads', 'NodeController@threads');
 
 Route::post('comments/{comment}/up-vote', 'CommentController@upVote');
 Route::post('comments/{comment}/down-vote', 'CommentController@downVote');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\NodeResource;
+use App\Http\Resources\ThreadResource;
 use App\Models\Node;
 use Illuminate\Http\Request;
 
@@ -38,6 +39,17 @@ class NodeController extends Controller
                     ->paginate($request->get('per_page', 20));
 
         return NodeResource::collection($nodes);
+    }
+
+    public function threads(Request $request, Node $node)
+    {
+        $threads = $node->threads()
+                        ->published()
+                        ->latest()
+                        ->filter($request->all())
+                        ->paginate($request->get('per_pate', 20));
+
+        return ThreadResource::collection($threads);
     }
 
     public function show(Request $request, Node $node)
