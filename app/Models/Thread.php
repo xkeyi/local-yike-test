@@ -169,6 +169,51 @@ class Thread extends Model
         return (bool) $this->frozen_at;
     }
 
+    public function getHasSubscribedAttribute()
+    {
+        if (auth()->guest()) {
+            return false;
+        }
+
+        return $this->relationLoaded('subscribers') ? $this->subscribers->contains(auth()->user()) : $this->isSubscribedBy(auth()->user());
+    }
+
+    public function getHasLikedAttribute()
+    {
+        if (auth()->guest()) {
+            return false;
+        }
+
+        return $this->relationLoaded('likers') ? $this->likers->contains(auth()->user()) : $this->isLikedBy(auth()->user());
+    }
+
+    /**
+     * @param \App\Comment $lastComment
+     *
+     * @throws \Exception
+     *
+     * @return mixed
+     */
+    public function afterCommentCreated(Comment $lastComment)
+    {
+        $lastComment->user->subscribe($this);
+    }
+
+    public function refreshCache()
+    {
+        $lastComment = $this->comments()->latest()->first();
+
+        $this->update(['cache' => \array_merge(self::CACHE_FIELDS, [
+            'views_count' => $this->cache['views_count'],
+            'comments_count' => $this->comments()->count(),
+            'likes_count' => $this->likers()->count(),
+            'favoriters_count' => $this->favoriters()->count(),
+            'subscriptions_count' => $this->subscribers()->count(),
+            'last_reply_user_id' => $lastComment ? $lastComment->user->id : 0,
+            'last_reply_user_name' => $lastComment ? $lastComment->user->name : '',
+        ])]);
+    }
+
     public static function throttleCheck(User $user)
     {
         $lastThread = $user->threads()->latest()->first();

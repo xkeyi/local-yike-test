@@ -6,10 +6,11 @@ use App\Traits\WithDiffForHumanTimes;
 use EloquentFilter\Filterable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Overtrue\LaravelFollow\Traits\CanBeSubscribed;
 
 class Node extends Model
 {
-    use SoftDeletes, Filterable, WithDiffForHumanTimes;
+    use SoftDeletes, Filterable, WithDiffForHumanTimes, CanBeSubscribed;
 
     protected $fillable = [
         'node_id', 'title', 'icon', 'banner', 'description', 'settings', 'cache',
@@ -46,5 +47,18 @@ class Node extends Model
     public function scopeLeaf($query)
     {
         return $query->whereNotNull('node_id');
+    }
+
+    public function refreshCache()
+    {
+        $this->update([
+            'cache->threads_count' => $this->threads()->count(),
+            'cache->subscribers_count' => $this->subscribers()->count(),
+        ]);
+    }
+
+    public function getHasSubcribedAttribute()
+    {
+        return $this->isSubscribedBy(auth()->user());
     }
 }

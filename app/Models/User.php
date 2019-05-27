@@ -182,6 +182,11 @@ class User extends Authenticatable
         return self::whereRaw(\sprintf('lower(username) = "%s" ', \strtolower($username)))->exists();
     }
 
+    public function setExtendsAttribute($value)
+    {
+        $this->attributes['extends'] = json_encode(\array_merge(json_decode($this->attributes['extends'] ?? '{}', true), $value));
+    }
+
     public function sendActiveMail()
     {
         return Mail::to($this->email)->queue(new Activation($this));
@@ -195,6 +200,18 @@ class User extends Authenticatable
     public function activate()
     {
         return $this->update(['activated_at' => now()]);
+    }
+
+    public function refreshCache()
+    {
+        $this->update(['cache' => \array_merge(self::CACHE_FIELDS, [
+            'threads_count' => $this->threads()->count(),
+            'comments_count' => $this->comments()->count(),
+            'likes_count' => $this->likes()->count(),
+            'followings_count' => $this->followings()->count(),
+            'followers_count' => $this->followers()->count(),
+            'subscriptions_count' => $this->subscriptions()->count(),
+        ])]);
     }
 
     public function getHasBannedAttribute()
@@ -224,6 +241,15 @@ class User extends Authenticatable
         }
 
         return $this->attributes['avatar'];
+    }
+
+    public function getHasFollowedAttribute()
+    {
+        if (auth()->guest()) {
+            return false;
+        }
+
+        return $this->relationLoaded('followers') ? $this->followers->contains(auth()->user()) : $this->isFollowedBy(auth()->user());
     }
 
     public function getCacheAttribute()
@@ -276,5 +302,41 @@ class User extends Authenticatable
     public function canCreateThread()
     {
         return Cache::get('thread_sensitive_trigger_'.$this->id, 0) < Thread::THREAD_SENSITIVE_TRIGGER_LIMIT && $this->energy >= 0;
+    }
+
+    public function userEnergyUpdate($action = null)
+    {
+        switch ($action) {
+            case 'upvote':
+                //评论点赞
+                $this->increment('energy', self::ENERGY_COMMENT_UP_VOTE);
+
+                break;
+            case 'upvote-cancel':
+                //评论点赞取消
+                $this->decrement('energy', self::ENERGY_COMMENT_UP_VOTE);
+
+                break;
+            case 'downvote':
+                //踩评论
+                $this->increment('energy', self::ENERGY_COMMENT_DOWN_VOTE);
+
+                break;
+            case 'downvote-cancel':
+                //踩评论取消
+                $this->decrement('energy', self::ENERGY_COMMENT_DOWN_VOTE);
+
+                break;
+            case 'like':
+                //点赞帖子
+                $this->increment('energy', self::ENERGY_THREAD_LIKED);
+
+                break;
+            case 'like-cancel':
+                //取消点赞帖子
+                $this->decrement('energy', self::ENERGY_THREAD_LIKED);
+
+                break;
+        }
     }
 }
