@@ -10,6 +10,8 @@ use App\Observers\ThreadObserver;
 use App\Observers\UserObserver;
 use App\Validators\HashValidator;
 use App\Validators\KeepWordValidator;
+use App\Validators\PhoneValidator;
+use App\Validators\PhoneVerifyCodeValidator;
 use App\Validators\PolyExistsValidator;
 use App\Validators\TicketValidator;
 use App\Validators\UsernameValidator;
@@ -25,8 +27,10 @@ class AppServiceProvider extends ServiceProvider
     // 自定义验证规则扩展
     protected $validators =[
         'hash' => HashValidator::class,
-        'key_word' => KeepWordValidator::class,
+        'keep_word' => KeepWordValidator::class,
         'poly_exists' => PolyExistsValidator::class,
+        'phone' => PhoneValidator::class,
+        'verify_code' => PhoneVerifyCodeValidator::class,
         'ticket' => TicketValidator::class,
         'username' => UsernameValidator::class,
         'user_unique_content' => UserUniqueContentValidator::class,
